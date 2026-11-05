@@ -109,6 +109,9 @@ impl crate::Host {
             if let Some(bridge) = &project.kotlin_bridge {
                 bridge.schedule();
             }
+            if let Some(phpstan) = &project.phpstan {
+                phpstan.interrupt();
+            }
             if !trusted {
                 project.lsp.set_execution_allowed(false);
             }
@@ -335,6 +338,7 @@ pub fn restricted_command_allowed(cmd: &str) -> bool {
             | "vcs_compare_scope"
             | "vcs_compare_paths"
             | "vcs_diff_revisions"
+            | "vcs_diff_numstat"
             | "vcs_merge_base"
             | "vcs_shelves"
             | "vcs_shelf_patch"

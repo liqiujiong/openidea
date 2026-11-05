@@ -577,6 +577,11 @@ export const commands = {
 	vcsComparePaths: (paths: string[], revision: string, repositories: string[] | null, request: RequestId) => typedError<CompareResult, IdeError>(__TAURI_INVOKE("vcs_compare_paths", { paths, revision, repositories, request })),
 	/**  Files that differ between two revisions (the "N files updated" of Update Project). */
 	vcsDiffRevisions: (repo: string | null, from: string, to: string) => typedError<ChangedFile[], IdeError>(__TAURI_INVOKE("vcs_diff_revisions", { repo, from, to })),
+	/**
+	 *  Added and deleted lines between two revisions (Git Log › lines added and deleted).
+	 *  `paths` limits the diff to those repository-relative paths; empty diffs every file.
+	 */
+	vcsDiffNumstat: (repo: string | null, from: string, to: string, paths: string[]) => typedError<FileLineStats[], IdeError>(__TAURI_INVOKE("vcs_diff_numstat", { repo, from, to, paths })),
 	/**  The best common ancestor of `a` and `b` (`git merge-base`), if any. */
 	vcsMergeBase: (repo: string | null, a: string, b: string) => typedError<string | null, IdeError>(__TAURI_INVOKE("vcs_merge_base", { repo, a, b })),
 	vcsCreatePatch: (repo: string | null, source: PatchSource) => typedError<string, IdeError>(__TAURI_INVOKE("vcs_create_patch", { repo, source })),
@@ -2426,6 +2431,8 @@ export type CoverageReportSpec =
 { kind: "lcov"; runner: string; path: IpcPath; base: IpcPath } | 
 /**  `go test -coverprofile`; import paths under `module` map to `module_dir`. */
 { kind: "goProfile"; path: IpcPath; module: string; moduleDir: IpcPath } | 
+/**  SimpleCov's `.resultset.json`; relative paths resolve against `base`. */
+{ kind: "simpleCov"; path: IpcPath; base: IpcPath } | 
 /**  Every JaCoCo XML report (Maven `target/site/jacoco`, Gradle `build/reports/jacoco`) under `dir`. */
 { kind: "jacoco"; dir: IpcPath } | 
 /**  The tool's raw data is exported to lcov by `argv` first (coverage.py: `… -m coverage lcov -o <lcov>`). */
@@ -3572,6 +3579,18 @@ export type FileIconThemeOptions = {
 export type FileIdentifiers = {
 	path: IpcPath,
 	occurrences: IdentifierOccurrence[],
+};
+
+/**
+ *  Added and deleted lines of one file between two revisions (`git diff --numstat`).
+ *  A rename keeps the counts of the content change; a pure rename is `0`/`0`.
+ */
+export type FileLineStats = {
+	/**  Path after the change (the only path, when the file was not renamed). */
+	path: string,
+	oldPath: string | null,
+	added: number,
+	removed: number,
 };
 
 export type FileMatch = {
@@ -5514,6 +5533,12 @@ export type PhpSettings = {
 	 *  `composer.json` (`wordpress`).
 	 */
 	stubs?: string[],
+	/**
+	 *  PHPStan configuration file for checking saved files; empty = the `phpstan.neon`,
+	 *  `phpstan.neon.dist` or `phpstan.dist.neon` PHPStan finds in the project root. Absolute,
+	 *  `~/`, or relative to the project.
+	 */
+	phpstanConfig?: string,
 };
 
 /**  The focused editor when a plugin command is invoked. */
